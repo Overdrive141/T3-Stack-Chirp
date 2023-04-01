@@ -10,11 +10,27 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
 import { LoadingPage, LoadingSpinner } from "~/components/Loading";
+import { useState } from "react";
 
 dayjs.extend(relativeTime);
 
 const CreatePostWizard = () => {
   const { user } = useUser();
+
+  const [input, setInput] = useState<string>("");
+
+  // update existing posts by invalidating existing cache
+  // Fetch context by api context call
+  const ctx = api.useContext();
+
+  const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+    onSuccess: () => {
+      setInput("");
+
+      // add void before to tell TypeScript we dont care about await even if it is a promise
+      void ctx.posts.getAll.invalidate();
+    },
+  });
 
   if (!user) return null;
 
@@ -30,7 +46,12 @@ const CreatePostWizard = () => {
       <input
         placeholder="Type something..."
         className="grow bg-transparent outline-none"
+        value={input}
+        type="text"
+        onChange={(e) => setInput(e.target.value)}
+        disabled={isPosting}
       />
+      <button onClick={() => mutate({ content: input })}>Post</button>
     </div>
   );
 };
@@ -53,7 +74,7 @@ const PostView = (props: PostWithUser) => {
           <span>{`@${author.username}`}</span>
           <span>{`· ${dayjs(post.createdAt).fromNow()}`}</span>
         </div>
-        <span> {post.content}</span>
+        <span className="text-2xl"> {post.content}</span>
       </div>
     </div>
   );
@@ -68,7 +89,7 @@ const Feed = () => {
 
   return (
     <div className="flex flex-col">
-      {[...data, ...data]?.map((fullPost) => (
+      {data.map((fullPost) => (
         <PostView {...fullPost} key={fullPost.post.id} />
       ))}
     </div>

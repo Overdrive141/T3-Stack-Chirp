@@ -3,7 +3,11 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  privateProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 const filterUserForClient = (user: User) => {
   return {
@@ -12,6 +16,8 @@ const filterUserForClient = (user: User) => {
     profileImageUrl: user.profileImageUrl,
   };
 };
+// Knowing who you are as user and if you have permission
+// Attach Auth State to Context with each state
 
 export const postsRouter = createTRPCRouter({
   // publicProcedure is a method to generate the function that the client calls
@@ -19,6 +25,7 @@ export const postsRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     const posts = await ctx.prisma.post.findMany({
       take: 100,
+      orderBy: [{ createdAt: "desc" }],
     });
 
     const users = (
@@ -44,4 +51,23 @@ export const postsRouter = createTRPCRouter({
       };
     });
   }),
+
+  create: privateProcedure
+    .input(
+      z.object({
+        content: z.string().min(1).max(280),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const authorId = ctx.userId;
+
+      const post = await ctx.prisma.post.create({
+        data: {
+          authorId,
+          content: input.content,
+        },
+      });
+
+      return post;
+    }),
 });
