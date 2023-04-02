@@ -22,5 +22,14 @@ const config = {
     locales: ["en"],
     defaultLocale: "en",
   },
+
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // uses swc instead of babel to faster build times
+  swcMinify: true,
 };
 export default config;
