@@ -4,7 +4,7 @@
 
 I wanted to learn how the T3 stack works, mainly to learn about TypeScript & tRPC. The project was created by following a tutorial on the T3 stack by Theo.
 
-The deployed version can be found at: [Next.js, tRPC, TypeScript, Tailwind, Prisma](https://t3-stack-chirp-overdrive141.vercel.app/)
+The deployed version can be found at: https://t3-stack-chirp-overdrive141.vercel.app/
 
 
 ## Learn More
