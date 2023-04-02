@@ -2,6 +2,8 @@ import { User } from "@clerk/nextjs/dist/api";
 import { clerkClient } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { Ratelimit } from "@upstash/ratelimit"; // for deno: see above
+import { Redis } from "@upstash/redis";
 
 import {
   createTRPCRouter,
@@ -16,6 +18,20 @@ const filterUserForClient = (user: User) => {
     profileImageUrl: user.profileImageUrl,
   };
 };
+
+// Create a new ratelimiter, that allows 3 requests per 1 minute
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(3, "1 m"),
+  analytics: true,
+  /**
+   * Optional prefix for the keys used in redis. This is useful if you want to share a redis
+   * instance with other applications and want to avoid key collisions. The default prefix is
+   * "@upstash/ratelimit"
+   */
+  prefix: "@upstash/ratelimit",
+});
+
 // Knowing who you are as user and if you have permission
 // Attach Auth State to Context with each state
 
@@ -60,6 +76,12 @@ export const postsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const authorId = ctx.userId;
+
+      // Use a constant string to limit all requests with a single ratelimit
+      // Or use a userID, apiKey or ip address for individual limits.
+      const { success } = await ratelimit.limit(authorId);
+
+      if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
 
       const post = await ctx.prisma.post.create({
         data: {
