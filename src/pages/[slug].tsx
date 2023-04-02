@@ -2,16 +2,12 @@
 
 import type { GetStaticProps, NextPage } from "next";
 import Head from "next/head";
-
 import { LoadingPage } from "~/components/Loading";
-import { appRouter } from "~/server/api/root";
 import { api } from "~/utils/api";
-import { createProxySSGHelpers } from "@trpc/react-query/ssg";
-import { prisma } from "~/server/db";
-import superjson from "superjson";
 import { PageLayout } from "~/components/Layout";
 import Image from "next/image";
 import { PostView } from "~/components/PostView";
+import { generateSSGHelper } from "~/server/helpers/ssgHelper";
 
 const ProfileFeed = (props: { userId: string }) => {
   const { data, isLoading } = api.posts.getPostsByUserId.useQuery({
@@ -67,11 +63,7 @@ const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
 
 // Treated like static asset and rerun validation when and how you choose
 export const getStaticProps: GetStaticProps = async (context) => {
-  const ssg = createProxySSGHelpers({
-    router: appRouter,
-    ctx: { prisma, userId: null },
-    transformer: superjson,
-  });
+  const ssg = generateSSGHelper();
 
   const slug = context.params?.slug;
 

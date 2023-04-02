@@ -54,6 +54,18 @@ const ratelimit = new Ratelimit({
 // Attach Auth State to Context with each state
 
 export const postsRouter = createTRPCRouter({
+  getById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const post = await ctx.prisma.post.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!post) throw new TRPCError({ code: "NOT_FOUND" });
+
+      return (await addUserDataToPosts([post]))[0];
+    }),
+
   // publicProcedure is a method to generate the function that the client calls
   // Any client call it without being authenticated - PublicProcedure
   getAll: publicProcedure.query(async ({ ctx }) => {
